@@ -51,15 +51,18 @@ client.on('message', async (msg) => {
   }
 });
 
-client.initialize();
-
-// Pedir codigo de vinculacion
-setTimeout(async () => {
+// Pedir codigo cuando WhatsApp este listo para vincular
+let yaPedido = false;
+client.on('qr', async () => {
+  if (yaPedido) return;
+  yaPedido = true;
   try {
     const code = await client.requestPairingCode('56932158417');
     console.log('TU CODIGO ES: ' + code);
   } catch (e) {
     console.log('Error pidiendo codigo: ' + e.message);
+    yaPedido = false;
   }
-}, 8000);
+});
 
+client.initialize();
