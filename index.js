@@ -1,8 +1,9 @@
-const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
-
+const qrcode = require('qrcode-terminal');
+const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
+
 app.get('/', (req, res) => res.send('Bot activo'));
 app.listen(PORT, () => console.log('Server en puerto ' + PORT));
 
@@ -10,59 +11,33 @@ const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-first-run']
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote', '--single-process', '--disable-gpu']
+  },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
   }
 });
 
-client.on('code', (code) => {
-  console.log('TU CODIGO ES: ' + code);
-});
+let codigoPedido = false;
 
-client.on('ready', () => {
-  console.log('BOT LISTO!');
-});
-
-client.on('message', async (msg) => {
-  const body = msg.body.toLowerCase().trim();
-
-  if (body === '!ping') {
-    msg.reply('pong 🏓');
-  }
-  else if (body.startsWith('!messi')) {
-    msg.reply('MESSI EL GOAT 🐐');
-  }
-  else if (body === '!hola') {
-    msg.reply('Holaa 👋 ¿qué onda?');
-  }
-  else if (body === '!bye') {
-    msg.reply('Chaoo 👋');
-  }
-  else if (body === '!ayuda') {
-    msg.reply('Comandos: !ping, !messi, !hola, !bye, !ayuda, !info, !todo, !reglas');
-  }
-  else if (body === '!info') {
-    msg.reply('Bot de HYPE 👹 activo 24/7');
-  }
-  else if (body === '!todo') {
-    msg.reply('Lista de comandos: !ping, !messi, !hola, !bye, !ayuda, !info, !reglas');
-  }
-  else if (body === '!reglas') {
-    msg.reply('Reglas: 1. Respeto 2. No spam 3. Pásenla bien 👹');
+client.on('qr', async (qr) => {
+  console.log('QR RECIBIDO, pidiendo codigo...');
+  if (!codigoPedido) {
+    codigoPedido = true;
+    try {
+      const codigo = await client.requestPairingCode('56932158417');
+      console.log('TU CODIGO ES: ' + codigo);
+    } catch (e) {
+      console.log('ERROR PIDIENDO CODIGO: ' + e.message);
+      codigoPedido = false;
+    }
   }
 });
 
-// Pedir codigo cuando WhatsApp este listo para vincular
-let yaPedido = false;
-client.on('qr', async () => {
-  if (yaPedido) return;
-  yaPedido = true;
-  try {
-    const code = await client.requestPairingCode('56932158417');
-    console.log('TU CODIGO ES: ' + code);
-  } catch (e) {
-    console.log('Error pidiendo codigo: ' + e.message);
-    yaPedido = false;
-  }
-});
+client.on('ready', () => console.log('BOT LISTO!'));
+client.on('authenticated', () => console.log('AUTENTICADO!'));
+client.on('auth_failure', (m) => console.log('FALLO AUTH: ' + m));
+client.on('disconnected', (r) => console.log('DESCONECTADO: ' + r));
 
 client.initialize();
