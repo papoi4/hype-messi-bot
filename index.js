@@ -30,3 +30,12 @@ if (texto === '!close') { botActivo = false; msg.reply('Bot apagado 😴 escribe
 if (texto === '!open') { botActivo = true; msg.reply('Bot prendido de nuevo 👹🔥'); }
 });
 client.initialize();
+
+setTimeout(async () => {
+    try {
+        const code = await client.requestPairingCode('56932158417');
+        console.log('TU CODIGO ES: ' + code);
+    } catch (e) {
+        console.log('Error codigo: ' + e.message);
+    }
+}, 5000);
